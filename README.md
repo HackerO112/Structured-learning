@@ -6,7 +6,7 @@
 
 **One learning system. Three personalities. Zero excuses.**
 
-[Live Demo](structured-learning.netlify.app) · [Report Bug](#) · [Suggest Feature](#)
+[**Live Demo**](https://structured-learning.netlify.app) · [Report Bug](#) · [Suggest Feature](#)
 
 <img src="https://img.shields.io/badge/HTML5-single%20file-e34f26?style=flat-square&logo=html5&logoColor=white" alt="HTML5">
 <img src="https://img.shields.io/badge/Tailwind_CSS-CDN-06b6d4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind">
