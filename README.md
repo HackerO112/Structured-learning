@@ -59,7 +59,7 @@ Paper and ink. Serif typography. Minimal borders. No visual noise. Designed for 
 
 ```bash
 # 1. Clone or download the HTML file
-git clone https://github.com/YOUR_USERNAME/MasteryOS.git
+git clone https://github.com/HackerO112/Structured-learning.git
 
 # 2. Open it. That's it.
 open index.html        # macOS
