@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mastery OS | Tri-Core Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@300;400;500;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                        serif: ['Merriweather', 'serif'],
+                    },
+                    colors: {
+                        brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a' },
+                        zen: { bg: '#FDFBF7', panel: '#FFFFFF', text: '#2C2B29', accent: '#D97757', muted: '#8C8B88' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Shared & Generic */
+        body { overflow: hidden; user-select: none; }
+        ::-webkit-scrollbar { width: 6px; }
+        .flip-card { perspective: 1000px; }
+        .flip-card-inner { transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; position: relative; height: 100%; width: 100%; }
+        .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+        .flip-card-front, .flip-card-back { backface-visibility: hidden; position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;}
+        .flip-card-back { transform: rotateY(180deg); }
+        .fade-in { animation: fadeIn 0.3s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .stream-token { opacity: 0; animation: fadeInToken 0.1s forwards; }
+        @keyframes fadeInToken { to { opacity: 1; } }
+
+        /* Hacker Edition Specifics */
+        .hacker-theme { background: #030303; color: #22c55e; }
+        .hacker-theme ::-webkit-scrollbar-track { background: #030303; }
+        .hacker-theme ::-webkit-scrollbar-thumb { background: #15803d; border-radius: 2px; }
+        .hacker-theme input, .hacker-theme textarea { caret-color: #22c55e; outline: none; }
+        .hacker-theme input:focus, .hacker-theme textarea:focus { border-color: #15803d; box-shadow: 0 0 5px rgba(34, 197, 94, 0.2); }
+        .hacker-glow { text-shadow: 0 0 5px #22c55e; }
+        body.hacker-theme.crt::before { content: " "; display: block; position: absolute; inset: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 9999; background-size: 100% 2px, 3px 100%; pointer-events: none; }
+
+        /* Normal Edition Specifics */
+        .normal-theme { background: #f8fafc; color: #0f172a; }
+        .normal-theme ::-webkit-scrollbar-track { background: transparent; }
+        .normal-theme ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        .normal-theme input:focus, .normal-theme textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); outline: none; }
+
+        /* Zen Edition Specifics (Paper & Ink) */
+        .zen-theme { background: #FDFBF7; color: #2C2B29; }
+        .zen-theme ::-webkit-scrollbar-track { background: transparent; }
+        .zen-theme ::-webkit-scrollbar-thumb { background: #E5E4E2; border-radius: 0; }
+        .zen-theme input, .zen-theme textarea { outline: none; transition: border-color 0.3s; }
+        .zen-theme input:focus, .zen-theme textarea:focus { border-color: #D97757; }
+    </style>
+</head>
+<body id="appBody">
+
+    <!-- ========================================================================= -->
+    <!-- 0. ONBOARDING SELECTOR -->
+    <!-- ========================================================================= -->
+    <div id="os-selector" class="hidden absolute inset-0 z-[99999] bg-slate-900 flex flex-col items-center justify-center p-6 text-white font-sans overflow-y-auto">
+        <h1 class="text-4xl font-bold mb-2 tracking-tight">Select Your Paradigm</h1>
+        <p class="text-slate-400 mb-12">The database is shared. Your learning persists across all environments.</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl w-full">
+            <!-- Normal -->
+            <button onclick="OS.setMode('n')" class="flex flex-col items-center p-8 bg-slate-800 rounded-2xl hover:bg-slate-700 hover:ring-2 ring-brand-500 transition-all text-left">
+                <div class="w-16 h-16 bg-brand-500 rounded-full flex items-center justify-center mb-6 shadow-lg"><span class="font-bold">UI</span></div>
+                <h2 class="text-xl font-bold mb-2">Standard</h2>
+                <p class="text-slate-400 text-sm text-center">Clean, macOS-style interface. Rounded typography and intuitive glassmorphism.</p>
+            </button>
+            
+            <!-- Hacker -->
+            <button onclick="OS.setMode('h')" class="flex flex-col items-center p-8 bg-black border border-green-900 rounded-2xl hover:border-green-500 transition-all text-left">
+                <div class="w-16 h-16 border-2 border-green-500 flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(34,197,94,0.3)]"><span class="text-green-500 font-mono text-xl">>_</span></div>
+                <h2 class="text-xl font-mono text-green-500 font-bold mb-2">Hacker</h2>
+                <p class="text-gray-500 text-sm font-mono text-center">Tiling WM aesthetic. Terminal config, audio keystrokes, cinematic boot sequence.</p>
+            </button>
+
+            <!-- Zen -->
+            <button onclick="OS.setMode('z')" class="flex flex-col items-center p-8 bg-[#FDFBF7] text-[#2C2B29] rounded-2xl hover:shadow-xl transition-all text-left">
+                <div class="w-16 h-16 border border-[#2C2B29] flex items-center justify-center mb-6 rounded-sm"><span class="font-serif italic text-xl">Z</span></div>
+                <h2 class="text-xl font-serif font-bold mb-2">Academic (Zen)</h2>
+                <p class="text-[#8C8B88] text-sm font-serif text-center">Minimalist paper aesthetic. Distraction-free typography built for pure focus and retention.</p>
+            </button>
+        </div>
+    </div>
+
+    <!-- Cinematic Boot Overlay (Hacker Only) -->
+    <div id="boot-screen" class="absolute inset-0 bg-black z-[10000] flex flex-col p-8 hidden font-mono">
+        <div id="boot-log" class="space-y-1 text-xs text-green-500 hacker-glow"></div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 1. NORMAL EDITION (n) -->
+    <!-- ========================================================================= -->
+    <div id="n-app" class="hidden h-screen w-full font-sans normal-theme flex">
+        <aside class="w-64 bg-white border-r border-slate-200 flex flex-col shadow-sm z-10">
+            <div class="p-6"><h1 class="text-2xl font-bold tracking-tight text-slate-800">Mastery</h1></div>
+            
+            <div class="px-6 pb-6 border-b border-slate-100">
+                <div id="n-timer-display" class="text-4xl font-bold text-slate-800 tracking-tighter mb-4">25:00</div>
+                <div class="flex gap-2">
+                    <button onclick="Timer.start()" id="n-timer-btn" class="flex-1 bg-brand-500 hover:bg-brand-600 text-white py-2 rounded-lg font-medium transition-colors text-sm shadow-sm">Focus</button>
+                    <button onclick="Timer.reset()" class="px-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors">↻</button>
+                </div>
+            </div>
+
+            <nav class="flex-1 p-4 space-y-1">
+                <button onclick="OS.nav('blueprint')" data-nav="blueprint" class="n-nav w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-slate-500">Blueprint</button>
+                <button onclick="OS.nav('curriculum')" data-nav="curriculum" class="n-nav w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-slate-500">Curriculum</button>
+                <button onclick="OS.nav('feynman')" data-nav="feynman" class="n-nav w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-slate-500">Feynman AI</button>
+                <button onclick="OS.nav('vault')" data-nav="vault" class="n-nav w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-slate-500">Recall Vault</button>
+            </nav>
+
+            <div class="p-4 border-t border-slate-100">
+                <div class="flex justify-between px-4 mb-4"><span class="text-xs font-semibold text-slate-400">STREAK</span><span id="n-streak-count" class="text-sm font-bold text-brand-600">0d</span></div>
+                <button onclick="OS.openSettings()" class="w-full text-left px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-50">⚙️ Settings</button>
+            </div>
+        </aside>
+        
+        <main class="flex-1 overflow-y-auto relative">
+            <div id="n-view-blueprint" class="n-view hidden absolute inset-0 p-10 flex flex-col max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold mb-8">Target Definition</h2>
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                    <label class="text-xs font-bold text-brand-600 uppercase mb-2 block">Finish Line</label>
+                    <textarea id="n-bp-goal" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-700 mb-6" oninput="DB.saveGoal()"></textarea>
+                    <label class="text-xs font-bold text-brand-600 uppercase mb-2 block">Proof of Work</label>
+                    <textarea id="n-bp-pow" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-700" oninput="DB.saveGoal()"></textarea>
+                </div>
+            </div>
+            
+            <div id="n-view-curriculum" class="n-view hidden absolute inset-0 p-10 flex flex-col max-w-4xl mx-auto">
+                <div class="flex justify-between items-end mb-6"><h2 class="text-3xl font-bold">Curriculum</h2><span id="n-progress-text" class="text-lg font-bold text-brand-600">0%</span></div>
+                <div class="w-full bg-slate-200 h-2 rounded-full mb-8 overflow-hidden"><div id="n-progress-bar" class="h-full bg-brand-500 transition-all duration-500"></div></div>
+                <div class="flex gap-3 mb-8">
+                    <input id="n-cur-input" type="text" class="flex-1 bg-white border border-slate-200 rounded-xl px-4" placeholder="Add study module..." onkeydown="if(event.key==='Enter')Curriculum.add()">
+                    <button onclick="Curriculum.add()" class="bg-brand-500 text-white px-6 rounded-xl font-medium shadow-sm">Add</button>
+                    <button onclick="Curriculum.shuffle()" class="bg-white border border-slate-200 px-4 rounded-xl">Shuffle</button>
+                </div>
+                <div id="n-cur-list" class="space-y-3"></div>
+            </div>
+
+            <div id="n-view-feynman" class="n-view hidden absolute inset-0 p-10 flex flex-col max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold mb-6">Feynman AI</h2>
+                <div id="n-feynman-chat" class="flex-1 overflow-y-auto space-y-6 mb-6 p-4 bg-white rounded-2xl border border-slate-100 shadow-inner"></div>
+                <div class="flex gap-3 relative">
+                    <input id="n-feynman-input" type="text" class="flex-1 bg-white border border-slate-200 rounded-full px-6 py-4 pr-32" placeholder="Explain simply..." onkeydown="if(event.key==='Enter')Feynman.send()">
+                    <button onclick="Feynman.send()" class="absolute right-2 top-2 bottom-2 bg-brand-500 text-white px-6 rounded-full font-medium">Send</button>
+                </div>
+            </div>
+
+            <div id="n-view-vault" class="n-view hidden absolute inset-0 p-10 flex flex-col max-w-6xl mx-auto">
+                <h2 class="text-3xl font-bold mb-8">Active Recall</h2>
+                <div class="flex gap-4 mb-10 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <input id="n-vault-front" type="text" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="Front">
+                    <input id="n-vault-back" type="text" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="Back">
+                    <button onclick="Vault.add()" class="bg-slate-900 text-white px-8 rounded-xl font-medium">Save</button>
+                </div>
+                <div id="n-vault-grid" class="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 auto-rows-[200px] pb-12"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 2. HACKER EDITION (h) -->
+    <!-- ========================================================================= -->
+    <div id="h-app" class="hidden h-screen w-full font-mono hacker-theme flex">
+        <aside class="w-64 flex flex-col border-r border-[#1a1a1a] bg-[#050505] shrink-0 z-10">
+            <div class="p-4 border-b border-[#1a1a1a] text-xs text-center tracking-widest uppercase font-bold hacker-glow">OS//Mastery</div>
+            <div class="p-4 border-b border-[#1a1a1a]">
+                <div class="text-[10px] text-gray-500 mb-2 uppercase">pomo_daemon</div>
+                <div id="h-timer-display" class="text-3xl font-bold text-center tracking-tighter hacker-glow mb-3">25:00</div>
+                <div class="flex gap-1">
+                    <button onclick="Timer.start()" id="h-timer-btn" class="flex-1 bg-[#0a0a0a] border border-[#1a1a1a] hover:border-[#15803d] py-1 text-xs">Start</button>
+                    <button onclick="Timer.reset()" class="px-3 bg-[#0a0a0a] border border-[#1a1a1a] hover:border-red-900 hover:text-red-500 py-1 text-xs">Rst</button>
+                </div>
+            </div>
+            <div class="p-4 border-b border-[#1a1a1a] flex justify-between text-xs"><span class="text-gray-500">streak</span><span id="h-streak-count" class="font-bold hacker-glow">0d</span></div>
+            <nav class="flex-1 p-2 space-y-1 text-xs overflow-y-auto">
+                <button onclick="OS.nav('blueprint')" data-nav="blueprint" class="h-nav w-full flex justify-between px-3 py-2 text-gray-500 hover:text-[#22c55e] border-l-2 border-transparent"><span>/mnt/blueprint</span><span>Alt+1</span></button>
+                <button onclick="OS.nav('curriculum')" data-nav="curriculum" class="h-nav w-full flex justify-between px-3 py-2 text-gray-500 hover:text-[#22c55e] border-l-2 border-transparent"><span>/mnt/curriculum</span><span>Alt+2</span></button>
+                <button onclick="OS.nav('feynman')" data-nav="feynman" class="h-nav w-full flex justify-between px-3 py-2 text-gray-500 hover:text-[#22c55e] border-l-2 border-transparent"><span>~/feynman</span><span>Alt+3</span></button>
+                <button onclick="OS.nav('vault')" data-nav="vault" class="h-nav w-full flex justify-between px-3 py-2 text-gray-500 hover:text-[#22c55e] border-l-2 border-transparent"><span>/mnt/sm2_vault</span><span>Alt+4</span></button>
+            </nav>
+            <div class="p-2 border-t border-[#1a1a1a]"><button onclick="Terminal.open()" class="w-full flex justify-between px-3 py-2 text-xs text-gray-500 hover:text-[#22c55e]"><span>>_ tty1</span><span>Alt+T</span></button></div>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto relative z-10">
+            <div id="h-view-blueprint" class="h-view hidden absolute inset-0 p-8 flex flex-col max-w-4xl">
+                <h2 class="text-xs uppercase tracking-widest text-gray-500 mb-6 font-bold">target.conf</h2>
+                <div class="flex-1 grid grid-rows-2 gap-6">
+                    <div class="flex flex-col"><label class="text-[10px] mb-2 uppercase hacker-glow">VAR: FINISH_LINE</label><textarea id="h-bp-goal" class="flex-1 bg-[#050505] border border-[#1a1a1a] p-5 resize-none text-sm" oninput="DB.saveGoal()"></textarea></div>
+                    <div class="flex flex-col"><label class="text-[10px] mb-2 uppercase hacker-glow">VAR: PROOF_OF_WORK</label><textarea id="h-bp-pow" class="flex-1 bg-[#050505] border border-[#1a1a1a] p-5 resize-none text-sm" oninput="DB.saveGoal()"></textarea></div>
+                </div>
+            </div>
+
+            <div id="h-view-curriculum" class="h-view hidden absolute inset-0 p-8 flex flex-col max-w-4xl">
+                <div class="flex justify-between items-center mb-6"><h2 class="text-xs text-gray-500 font-bold">map.sh</h2><button onclick="Curriculum.shuffle()" class="text-[10px] border border-[#1a1a1a] px-3 py-1 text-gray-500 hover:text-[#22c55e]">[~] SHUFFLE_MEM</button></div>
+                <div class="w-full bg-[#050505] h-1 mb-8 border border-[#1a1a1a]"><div id="h-progress-bar" class="h-full bg-[#15803d] transition-all"></div></div>
+                <div class="flex mb-6 gap-3"><input id="h-cur-input" type="text" class="flex-1 bg-[#050505] border border-[#1a1a1a] px-4 py-3 text-xs" onkeydown="if(event.key==='Enter')Curriculum.add()"><button onclick="Curriculum.add()" class="bg-[#0a0a0a] border border-[#1a1a1a] px-6 text-xs font-bold">INJECT</button></div>
+                <div id="h-cur-list" class="flex-1 overflow-y-auto space-y-2"></div>
+            </div>
+
+            <div id="h-view-feynman" class="h-view hidden absolute inset-0 p-8 flex flex-col max-w-4xl">
+                <h2 class="text-xs text-gray-500 mb-6 font-bold">feynman_daemon.service</h2>
+                <div id="h-feynman-chat" class="flex-1 overflow-y-auto space-y-4 mb-6 pr-4"></div>
+                <div class="flex gap-3"><span class="text-gray-600 mt-3">></span><input id="h-feynman-input" type="text" class="flex-1 bg-transparent border-b border-[#1a1a1a] px-2 py-3 text-sm outline-none" onkeydown="if(event.key==='Enter')Feynman.send()"><button onclick="Feynman.send()" class="bg-[#15803d] text-black px-6 text-xs font-bold">EXEC</button></div>
+            </div>
+
+            <div id="h-view-vault" class="h-view hidden absolute inset-0 p-8 flex flex-col max-w-6xl">
+                <h2 class="text-xs text-gray-500 mb-6 font-bold">sm2_vault.db</h2>
+                <div class="flex mb-8 gap-3"><input id="h-vault-front" type="text" class="flex-1 bg-[#050505] border border-[#1a1a1a] px-4 py-3 text-xs"><input id="h-vault-back" type="text" class="flex-1 bg-[#050505] border border-[#1a1a1a] px-4 py-3 text-xs"><button onclick="Vault.add()" class="bg-[#0a0a0a] border border-[#1a1a1a] px-6 text-xs font-bold">ENCRYPT</button></div>
+                <div id="h-vault-grid" class="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-4 gap-6 auto-rows-[180px]"></div>
+            </div>
+        </main>
+        
+        <!-- Hacker Terminal Overlay -->
+        <div id="terminal-overlay" class="hidden absolute inset-0 bg-[#000000]/95 z-50 flex flex-col backdrop-blur-sm p-4">
+            <div class="flex justify-between pb-2 border-b border-[#1a1a1a] text-gray-500 text-xs font-bold mb-4"><span>bash :: root</span><button onclick="Terminal.close()">[ESC]</button></div>
+            <div id="term-output" class="flex-1 overflow-y-auto text-sm whitespace-pre-wrap text-gray-300 leading-relaxed mb-4">Type 'help' for commands.</div>
+            <div class="flex"><span class="mr-2">root:~$</span><input id="term-input" type="text" class="flex-1 bg-transparent outline-none text-sm" autocomplete="off" spellcheck="false" onkeydown="Terminal.handleInput(event)"></div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 3. ZEN EDITION (z) - Paper / Academic -->
+    <!-- ========================================================================= -->
+    <div id="z-app" class="hidden h-screen w-full font-serif zen-theme flex flex-col items-center">
+        <!-- Top Navigation -->
+        <nav class="w-full max-w-4xl flex justify-between items-center py-8 px-6">
+            <h1 class="text-2xl font-bold tracking-tight italic">Mastery.</h1>
+            <div class="flex gap-6 text-sm font-medium">
+                <button onclick="OS.nav('blueprint')" data-nav="blueprint" class="z-nav text-zen-muted hover:text-zen-text transition-colors pb-1 border-b border-transparent">Blueprint</button>
+                <button onclick="OS.nav('curriculum')" data-nav="curriculum" class="z-nav text-zen-muted hover:text-zen-text transition-colors pb-1 border-b border-transparent">Curriculum</button>
+                <button onclick="OS.nav('feynman')" data-nav="feynman" class="z-nav text-zen-muted hover:text-zen-text transition-colors pb-1 border-b border-transparent">Feynman</button>
+                <button onclick="OS.nav('vault')" data-nav="vault" class="z-nav text-zen-muted hover:text-zen-text transition-colors pb-1 border-b border-transparent">Recall</button>
+            </div>
+            <div class="flex gap-4 items-center">
+                <span id="z-timer-display" class="font-mono text-lg font-bold text-zen-accent cursor-pointer" onclick="Timer.start()" title="Click to Focus">25:00</span>
+                <button onclick="OS.openSettings()" class="text-zen-muted">⚙️</button>
+            </div>
+        </nav>
+
+        <main class="flex-1 w-full max-w-4xl relative overflow-y-auto px-6 pb-12">
+            <!-- Z-Blueprint -->
+            <div id="z-view-blueprint" class="z-view hidden absolute inset-0 p-6 flex flex-col">
+                <h2 class="text-4xl font-bold mb-10 text-center">The Objective</h2>
+                <div class="space-y-12 max-w-2xl mx-auto w-full">
+                    <div>
+                        <label class="text-sm font-bold text-zen-accent uppercase tracking-widest mb-4 block text-center">I. The Finish Line</label>
+                        <textarea id="z-bp-goal" rows="2" class="w-full bg-transparent border-b border-zen-muted/30 p-2 text-xl text-center resize-none" placeholder="What will you build?" oninput="DB.saveGoal()"></textarea>
+                    </div>
+                    <div>
+                        <label class="text-sm font-bold text-zen-accent uppercase tracking-widest mb-4 block text-center">II. Proof of Knowledge</label>
+                        <textarea id="z-bp-pow" rows="2" class="w-full bg-transparent border-b border-zen-muted/30 p-2 text-xl text-center resize-none" placeholder="How will you prove it?" oninput="DB.saveGoal()"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Z-Curriculum -->
+            <div id="z-view-curriculum" class="z-view hidden absolute inset-0 p-6 flex flex-col">
+                <h2 class="text-4xl font-bold mb-10 text-center">Syllabus</h2>
+                <div class="flex gap-4 mb-10 justify-center">
+                    <input id="z-cur-input" type="text" class="w-96 bg-transparent border-b border-zen-muted/50 px-2 py-2 text-lg text-center" placeholder="Add study module..." onkeydown="if(event.key==='Enter')Curriculum.add()">
+                    <button onclick="Curriculum.shuffle()" class="text-zen-muted text-sm hover:text-zen-accent italic">Interleave</button>
+                </div>
+                <div class="w-full h-[1px] bg-zen-muted/20 mb-8 relative">
+                    <div id="z-progress-bar" class="h-[2px] bg-zen-accent transition-all duration-500 absolute top-[-0.5px]"></div>
+                </div>
+                <div id="z-cur-list" class="space-y-4 max-w-2xl mx-auto w-full text-lg"></div>
+            </div>
+
+            <!-- Z-Feynman -->
+            <div id="z-view-feynman" class="z-view hidden absolute inset-0 p-6 flex flex-col">
+                <h2 class="text-4xl font-bold mb-6 text-center">Feynman Synthesis</h2>
+                <p class="text-center text-zen-muted italic mb-8">Explain the concept simply. Abstraction hides ignorance.</p>
+                <div id="z-feynman-chat" class="flex-1 overflow-y-auto space-y-8 mb-8 max-w-3xl mx-auto w-full px-4"></div>
+                <div class="max-w-3xl mx-auto w-full">
+                    <textarea id="z-feynman-input" rows="2" class="w-full bg-zen-panel border border-zen-muted/20 rounded shadow-sm p-4 text-lg resize-none" placeholder="Write your explanation..." onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); Feynman.send();}"></textarea>
+                </div>
+            </div>
+
+            <!-- Z-Vault -->
+            <div id="z-view-vault" class="z-view hidden absolute inset-0 p-6 flex flex-col">
+                <h2 class="text-4xl font-bold mb-10 text-center">Active Recall</h2>
+                <div class="flex gap-6 mb-12 justify-center max-w-3xl mx-auto w-full">
+                    <input id="z-vault-front" type="text" class="flex-1 bg-transparent border-b border-zen-muted/50 p-2 text-lg text-center" placeholder="Prompt">
+                    <input id="z-vault-back" type="text" class="flex-1 bg-transparent border-b border-zen-muted/50 p-2 text-lg text-center" placeholder="Response">
+                    <button onclick="Vault.add()" class="text-zen-accent font-bold px-4">Add Card</button>
+                </div>
+                <div id="z-vault-grid" class="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 auto-rows-[220px]"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Generic Settings Modal (Used by Normal and Zen modes) -->
+    <div id="generic-settings" class="hidden absolute inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white text-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-8 relative font-sans">
+            <button onclick="document.getElementById('generic-settings').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">✕</button>
+            <h3 class="text-2xl font-bold mb-6">Settings</h3>
+            
+            <label class="block text-sm font-medium text-slate-700 mb-2">Gemini API Key</label>
+            <input type="password" id="g-api-key" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-4" placeholder="AIzaSy...">
+            <button onclick="OS.saveKey('g')" class="w-full bg-brand-500 text-white py-3 rounded-xl font-medium mb-8">Save Key</button>
+
+            <div class="border-t border-slate-100 pt-6 space-y-3">
+                <button onclick="OS.setMode('n')" class="w-full bg-slate-100 text-slate-700 py-3 rounded-xl font-medium">Standard Edition</button>
+                <button onclick="OS.setMode('z')" class="w-full bg-[#FDFBF7] text-[#2C2B29] py-3 rounded-xl font-serif font-bold border border-slate-200">Academic (Zen) Edition</button>
+                <button onclick="OS.setMode('h')" class="w-full bg-black text-green-500 py-3 rounded-xl font-mono text-sm">Hacker Edition</button>
+                <button onclick="OS.nuke()" class="w-full bg-red-50 text-red-600 py-3 rounded-xl font-medium mt-4">Factory Reset (Wipe Data)</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // AUDIO ENGINE (Hacker Mode Only)
+        // ==========================================
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playKeystroke() {
+            if(OS.mode !== 'h') return;
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(400 + Math.random() * 200, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.015, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+            osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.04);
+        }
+        document.addEventListener('keydown', (e) => { if(e.key.length===1 || e.key==='Backspace' || e.key==='Enter') playKeystroke(); });
+
+        // ==========================================
+        // OS CONTROLLER (Polymorphic Engine)
+        // ==========================================
+        const OS = {
+            mode: localStorage.getItem('OS_MODE') || null,
+            
+            el(idBase) { return document.getElementById(this.mode + '-' + idBase); },
+            
+            init() {
+                if(!this.mode) { document.getElementById('os-selector').classList.remove('hidden'); return; }
+                DB.init();
+                
+                document.getElementById(this.mode + '-app').classList.remove('hidden');
+                if(this.mode !== 'h') document.body.classList.add(this.mode === 'n' ? 'normal-theme' : 'zen-theme');
+                else { document.body.classList.add('hacker-theme', 'crt'); this.runBoot(); }
+                
+                if(this.mode !== 'h') document.getElementById('g-api-key').value = localStorage.getItem('FEYNMAN_API_KEY') || '';
+                
+                this.updateStreak();
+                Timer.updateDisplay();
+                this.nav('blueprint');
+            },
+
+            setMode(m) { localStorage.setItem('OS_MODE', m); location.reload(); },
+
+            nav(path) {
+                document.querySelectorAll(`.${this.mode}-view`).forEach(v => v.classList.add('hidden'));
+                document.querySelectorAll(`.${this.mode}-nav`).forEach(b => {
+                    if(this.mode === 'h') { b.classList.remove('text-[#22c55e]', 'bg-[#0a0a0a]'); b.style.borderLeftColor = 'transparent'; }
+                    else if(this.mode === 'n') { b.classList.remove('bg-brand-50', 'text-brand-600'); }
+                    else { b.classList.remove('border-zen-accent', 'text-zen-text'); }
+                });
+                
+                this.el('view-' + path).classList.remove('hidden');
+                
+                const active = document.querySelector(`.${this.mode}-nav[data-nav="${path}"]`);
+                if(active) {
+                    if(this.mode === 'h') { active.classList.add('text-[#22c55e]', 'bg-[#0a0a0a]'); active.style.borderLeftColor = '#22c55e'; }
+                    else if(this.mode === 'n') { active.classList.add('bg-brand-50', 'text-brand-600'); }
+                    else { active.classList.add('border-zen-accent', 'text-zen-text'); }
+                }
+                
+                if (path === 'blueprint') this.updateBlueprint();
+                if (path === 'curriculum') Curriculum.render();
+                if (path === 'vault') Vault.render();
+            },
+
+            updateStreak() {
+                const s = DB.data.pomodoro.streak;
+                if(this.mode === 'h') this.el('streak-count').textContent = s + 'd';
+                else if(this.mode === 'n') this.el('streak-count').textContent = s + ' Days';
+            },
+            
+            updateBlueprint() {
+                this.el('bp-goal').value = DB.data.goals.learning || '';
+                this.el('bp-pow').value = DB.data.goals.proof || '';
+            },
+
+            openSettings() { document.getElementById('generic-settings').classList.remove('hidden'); },
+            saveKey(env) {
+                const k = document.getElementById(env + '-api-key').value.trim();
+                localStorage.setItem('FEYNMAN_API_KEY', k); Feynman.apiKey = k; alert("API Key Saved.");
+            },
+            nuke() { if(confirm("Wipe all data?")) { localStorage.clear(); location.reload(); } },
+
+            async runBoot() {
+                const logs = ["Mounting /dev/sda1...", "[ OK ] Local File Systems.", "Starting pomo_daemon...", "Starting feynman_daemon...", "[ OK ] System Ready."];
+                document.getElementById('boot-screen').classList.remove('hidden');
+                const cont = document.getElementById('boot-log');
+                for (let i = 0; i < logs.length; i++) {
+                    await new Promise(r => setTimeout(r, Math.random()*200+50));
+                    const d = document.createElement('div'); d.textContent = logs[i]; cont.appendChild(d); playKeystroke();
+                }
+                await new Promise(r => setTimeout(r, 400));
+                document.getElementById('boot-screen').classList.add('fade-out');
+                setTimeout(() => document.getElementById('boot-screen').style.display='none', 500);
+            }
+        };
+
+        // ==========================================
+        // DATABASE LOGIC
+        // ==========================================
+        const DB = {
+            data: null,
+            init() {
+                const s = localStorage.getItem('DB');
+                this.data = s ? JSON.parse(s) : { goals: { learning: '', proof: '' }, curriculum: [], flashcards: [], pomodoro: { streak: 0, lastActive: null } };
+                this.checkStreak(); this.save();
+            },
+            save() { localStorage.setItem('DB', JSON.stringify(this.data)); },
+            saveGoal() {
+                this.data.goals.learning = OS.el('bp-goal').value;
+                this.data.goals.proof = OS.el('bp-pow').value;
+                this.save();
+            },
+            checkStreak() {
+                const today = new Date().toISOString().split('T')[0];
+                const last = this.data.pomodoro.lastActive;
+                if (!last) return;
+                if (Math.ceil((new Date(today) - new Date(last)) / 86400000) > 1) { this.data.pomodoro.streak = 0; this.save(); }
+            },
+            touchStreak() {
+                const today = new Date().toISOString().split('T')[0];
+                if (this.data.pomodoro.lastActive !== today) {
+                    this.data.pomodoro.streak++; this.data.pomodoro.lastActive = today;
+                    this.save(); OS.updateStreak();
+                }
+            }
+        };
+
+        // ==========================================
+        // POMODORO LOGIC
+        // ==========================================
+        const Timer = {
+            interval: null, timeLeft: 25 * 60, isRunning: false,
+            updateDisplay() {
+                const m = Math.floor(this.timeLeft/60).toString().padStart(2,'0'), s = (this.timeLeft%60).toString().padStart(2,'0');
+                OS.el('timer-display').textContent = `${m}:${s}`;
+            },
+            start() {
+                if (this.isRunning) return; this.isRunning = true;
+                if(OS.mode !== 'z') OS.el('timer-btn').textContent = "Pause";
+                this.interval = setInterval(() => {
+                    this.timeLeft--; this.updateDisplay();
+                    if (this.timeLeft <= 0) { this.pause(); DB.touchStreak(); alert("Focus complete!"); this.reset(); }
+                }, 1000);
+            },
+            pause() { clearInterval(this.interval); this.isRunning = false; if(OS.mode !== 'z') OS.el('timer-btn').textContent = OS.mode==='h'?"Start":"Focus"; },
+            reset() { this.pause(); this.timeLeft = 25 * 60; this.updateDisplay(); }
+        };
+
+        // ==========================================
+        // CURRICULUM LOGIC
+        // ==========================================
+        const Curriculum = {
+            add() {
+                const i = OS.el('cur-input'); const val = i.value.trim(); if (!val) return;
+                DB.data.curriculum.push({ id: Date.now(), text: val, done: false });
+                DB.save(); i.value = ''; this.render();
+            },
+            toggle(id) { const item = DB.data.curriculum.find(c => c.id === id); if(item) item.done = !item.done; DB.save(); this.render(); },
+            delete(id) { DB.data.curriculum = DB.data.curriculum.filter(c => c.id !== id); DB.save(); this.render(); },
+            shuffle() {
+                const inc = DB.data.curriculum.filter(c => !c.done), comp = DB.data.curriculum.filter(c => c.done);
+                for (let i = inc.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [inc[i], inc[j]] = [inc[j], inc[i]]; }
+                DB.data.curriculum = [...inc, ...comp]; DB.save(); this.render();
+            },
+            render() {
+                const list = OS.el('cur-list');
+                const tot = DB.data.curriculum.length, done = DB.data.curriculum.filter(c => c.done).length;
+                const pct = tot===0?0:(done/tot)*100;
+                
+                if(OS.mode === 'n') OS.el('progress-text').textContent = Math.round(pct)+'%';
+                OS.el('progress-bar').style.width = pct+'%';
+                
+                list.innerHTML = DB.data.curriculum.map(c => {
+                    if(OS.mode === 'h') {
+                        return `<div class="flex items-center gap-3 group p-3 border border-[#1a1a1a] bg-[#0a0a0a] ${c.done?'opacity-30':''}">
+                            <button onclick="Curriculum.toggle(${c.id})" class="w-4 h-4 border ${c.done?'bg-[#22c55e] border-[#22c55e] text-black':'border-[#1a1a1a]'} flex justify-center items-center text-xs font-bold">${c.done?'×':''}</button>
+                            <span class="flex-1 ${c.done?'line-through text-gray-700':'text-gray-300'}">${c.text}</span>
+                            <button onclick="Curriculum.delete(${c.id})" class="text-gray-800 hover:text-red-500 opacity-0 group-hover:opacity-100 text-[10px]">DEL</button>
+                        </div>`;
+                    } else if(OS.mode === 'n') {
+                        return `<div class="flex items-center gap-4 group p-4 bg-white border border-slate-100 rounded-xl shadow-sm ${c.done?'opacity-50':''}">
+                            <button onclick="Curriculum.toggle(${c.id})" class="w-6 h-6 rounded-full border-2 ${c.done?'bg-brand-500 border-brand-500 text-white':'border-slate-300'}">${c.done?`✓`:''}</button>
+                            <span class="flex-1 font-medium ${c.done?'line-through text-slate-400':'text-slate-700'}">${c.text}</span>
+                            <button onclick="Curriculum.delete(${c.id})" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100">✕</button>
+                        </div>`;
+                    } else { // Zen
+                        return `<div class="flex items-center gap-6 group py-2 border-b border-zen-muted/10 ${c.done?'opacity-30':''}">
+                            <button onclick="Curriculum.toggle(${c.id})" class="text-2xl font-serif italic ${c.done?'text-zen-accent':'text-zen-muted/30'}">${c.done?'~':'o'}</button>
+                            <span class="flex-1 ${c.done?'line-through':''}">${c.text}</span>
+                            <button onclick="Curriculum.delete(${c.id})" class="text-zen-muted/30 hover:text-zen-accent opacity-0 group-hover:opacity-100 text-sm">x</button>
+                        </div>`;
+                    }
+                }).join('');
+            }
+        };
+
+        // --- FEYNMAN AI LOGIC ---
+        const Feynman = {
+            apiKey: localStorage.getItem('FEYNMAN_API_KEY') || '',
+            async send() {
+                this.apiKey = localStorage.getItem('FEYNMAN_API_KEY') || '';
+                const i = OS.el('feynman-input'); const t = i.value.trim(); if (!t) return;
+                this.addMsg("User", t); i.value = '';
+                
+                if (!this.apiKey) { this.streamMsg("System", "Error: No API Key found. Open settings."); return; }
+                const chat = OS.el('feynman-chat'); const loadId = 'load-' + Date.now();
+                
+                let loadHTML = '';
+                if(OS.mode === 'h') loadHTML = `<div id="${loadId}" class="flex flex-col items-start"><span class="text-[10px] text-gray-500 mb-1">sys@feynman</span><div class="p-4 border bg-[#0a0a0a] border-[#1a1a1a] text-sm text-gray-500 animate-pulse">Awaiting...</div></div>`;
+                else if(OS.mode === 'n') loadHTML = `<div id="${loadId}" class="flex flex-col items-start"><div class="p-4 bg-slate-100 rounded-2xl rounded-tl-sm text-slate-500 animate-pulse text-sm">Thinking...</div></div>`;
+                else loadHTML = `<div id="${loadId}" class="flex flex-col items-start"><div class="text-zen-muted italic text-lg animate-pulse">Pondering...</div></div>`;
+                
+                chat.innerHTML += loadHTML; chat.scrollTop = chat.scrollHeight;
+
+                try {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.apiKey}`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            system_instruction: { parts: [{ text: "Aggressive cognitive assistant. If vague or jargon-heavy, call out gaps ruthlessly. Demand mechanism. Under 3 sentences." }] },
+                            contents: [{ parts: [{ text: t }] }]
+                        })
+                    });
+                    if (!res.ok) throw new Error(res.status);
+                    const data = await res.json();
+                    document.getElementById(loadId).remove();
+                    this.streamMsg("System", data.candidates[0].content.parts[0].text);
+                } catch (e) { document.getElementById(loadId).remove(); this.streamMsg("System", `API Connection Failed.`); }
+            },
+            addMsg(role, content) {
+                const chat = OS.el('feynman-chat'); const isSys = role === "System";
+                if(OS.mode === 'h') chat.innerHTML += `<div class="flex flex-col ${isSys?'items-start':'items-end'}"><span class="text-[10px] ${isSys?'text-gray-500':'text-[#15803d]'} mb-1">${role}</span><div class="max-w-[80%] p-4 border ${isSys?'bg-[#0a0a0a] border-[#1a1a1a] text-gray-300':'bg-[#030303] border-[#15803d] text-[#22c55e]'} text-sm leading-relaxed">${content}</div></div>`;
+                else if(OS.mode === 'n') chat.innerHTML += `<div class="flex flex-col ${isSys?'items-start':'items-end'} mb-2"><div class="max-w-[80%] p-4 ${isSys?'bg-slate-100 text-slate-700 rounded-2xl rounded-tl-sm':'bg-brand-500 text-white rounded-2xl rounded-tr-sm'} text-sm leading-relaxed">${content}</div></div>`;
+                else chat.innerHTML += `<div class="flex flex-col ${isSys?'items-start':'items-end'} mb-6"><div class="max-w-[85%] text-lg leading-relaxed ${isSys?'text-zen-text':'text-zen-muted italic'}">${content}</div></div>`;
+                chat.scrollTop = chat.scrollHeight;
+            },
+            streamMsg(role, text) {
+                const chat = OS.el('feynman-chat'); const div = document.createElement('div'); div.className = 'flex flex-col items-start mb-6';
+                if(OS.mode === 'h') div.innerHTML = `<span class="text-[10px] text-gray-500 mb-1">${role}</span><div class="max-w-[80%] p-4 border bg-[#0a0a0a] border-[#1a1a1a] text-sm text-gray-300 stream-target leading-relaxed"></div>`;
+                else if(OS.mode === 'n') div.innerHTML = `<div class="max-w-[80%] p-4 bg-slate-100 text-slate-700 rounded-2xl rounded-tl-sm text-sm leading-relaxed stream-target"></div>`;
+                else div.innerHTML = `<div class="max-w-[85%] text-lg leading-relaxed text-zen-text stream-target"></div>`;
+                
+                chat.appendChild(div); const target = div.querySelector('.stream-target');
+                const words = text.replace(/\*\*/g, '').split(' '); let i = 0;
+                const int = setInterval(() => {
+                    if (i < words.length) {
+                        const s = document.createElement('span'); s.className = 'stream-token'; s.textContent = words[i] + ' ';
+                        target.appendChild(s); i++; chat.scrollTop = chat.scrollHeight;
+                        if(i%2===0) playKeystroke();
+                    } else clearInterval(int);
+                }, 40);
+            }
+        };
+
+        // --- SM-2 VAULT LOGIC ---
+        const Vault = {
+            add() {
+                const f = OS.el('vault-front'), b = OS.el('vault-back'); if (!f.value.trim() || !b.value.trim()) return;
+                DB.data.flashcards.push({ id: Date.now(), front: f.value.trim(), back: b.value.trim(), rep: 0, interval: 1, ef: 2.5, nextDate: Date.now() });
+                DB.save(); f.value = ''; b.value = ''; this.render();
+            },
+            grade(id, grade, event) {
+                event.stopPropagation(); const c = DB.data.flashcards.find(c => c.id === id); if (!c) return;
+                if (grade >= 3) { c.interval = c.rep===0 ? 1 : (c.rep===1 ? 6 : Math.round(c.interval * c.ef)); c.rep++; } 
+                else { c.rep = 0; c.interval = 1; }
+                c.ef = Math.max(1.3, c.ef + (0.1 - (5 - grade) * (0.08 + (5 - grade) * 0.02)));
+                c.nextDate = Date.now() + (c.interval * 86400000);
+                DB.save(); this.render();
+            },
+            delete(id, event) { event.stopPropagation(); DB.data.flashcards = DB.data.flashcards.filter(c => c.id !== id); DB.save(); this.render(); },
+            render() {
+                const grid = OS.el('vault-grid'); const now = Date.now();
+                const sorted = [...DB.data.flashcards].sort((a, b) => a.nextDate - b.nextDate);
+                grid.innerHTML = sorted.map(c => {
+                    const isDue = c.nextDate <= now;
+                    if(OS.mode === 'h') {
+                        return `<div class="flip-card cursor-pointer" onclick="this.classList.toggle('flipped')"><div class="flip-card-inner"><div class="flip-card-front" style="border-top: 3px solid ${isDue?'#22c55e':'#1a1a1a'}"><span class="text-[10px] uppercase ${isDue?'text-[#22c55e] hacker-glow':'text-gray-600'} absolute top-3">${isDue?'Due':'Done'}</span><span class="text-sm text-center text-gray-300 font-bold">${c.front}</span></div><div class="flip-card-back bg-gray-200 text-black p-2"><div class="flex-1 flex items-center justify-center"><span class="text-sm text-center font-bold">${c.back}</span></div><div class="w-full flex gap-1"><button onclick="Vault.grade(${c.id}, 1, event)" class="flex-1 py-1 text-[10px] bg-red-600 text-white rounded-sm">1</button><button onclick="Vault.grade(${c.id}, 3, event)" class="flex-1 py-1 text-[10px] bg-yellow-600 text-white rounded-sm">3</button><button onclick="Vault.grade(${c.id}, 5, event)" class="flex-1 py-1 text-[10px] bg-green-600 text-white rounded-sm">5</button></div><button onclick="Vault.delete(${c.id}, event)" class="absolute top-1 right-1 text-red-600 text-[10px]">x</button></div></div></div>`;
+                    } else if(OS.mode === 'n') {
+                        return `<div class="flip-card cursor-pointer" onclick="this.classList.toggle('flipped')"><div class="flip-card-inner shadow-sm hover:shadow-md transition-shadow"><div class="flip-card-front bg-white border border-slate-200 rounded-2xl"><span class="text-[10px] uppercase font-bold ${isDue?'text-red-500':'text-slate-400'} absolute top-4">${isDue?'Due Now':'Memorized'}</span><span class="text-lg text-center text-slate-700 font-medium px-4">${c.front}</span></div><div class="flip-card-back bg-brand-50 border border-brand-200 rounded-2xl p-2"><div class="flex-1 flex items-center justify-center"><span class="text-lg text-center text-brand-900 font-medium px-4">${c.back}</span></div><div class="w-full flex gap-2"><button onclick="Vault.grade(${c.id}, 1, event)" class="flex-1 py-2 text-xs bg-white text-red-500 font-medium rounded-xl hover:bg-red-50">Again</button><button onclick="Vault.grade(${c.id}, 3, event)" class="flex-1 py-2 text-xs bg-white text-amber-500 font-medium rounded-xl hover:bg-amber-50">Hard</button><button onclick="Vault.grade(${c.id}, 5, event)" class="flex-1 py-2 text-xs bg-brand-500 text-white font-medium rounded-xl hover:bg-brand-600">Easy</button></div><button onclick="Vault.delete(${c.id}, event)" class="absolute top-3 right-4 text-slate-300 hover:text-red-500">✕</button></div></div></div>`;
+                    } else { // Zen
+                        return `<div class="flip-card cursor-pointer" onclick="this.classList.toggle('flipped')"><div class="flip-card-inner shadow-lg"><div class="flip-card-front bg-zen-panel border border-zen-muted/20 p-6"><span class="text-xs italic ${isDue?'text-zen-accent':'text-zen-muted/50'} absolute top-4 left-6">${isDue?'Review Required':'Archived'}</span><span class="text-xl text-center text-zen-text leading-relaxed">${c.front}</span></div><div class="flip-card-back bg-zen-panel border border-zen-muted/20 p-6"><div class="flex-1 flex items-center justify-center"><span class="text-xl text-center text-zen-text leading-relaxed">${c.back}</span></div><div class="w-full flex justify-center gap-6 mt-4"><button onclick="Vault.grade(${c.id}, 1, event)" class="text-sm italic text-zen-muted hover:text-red-500">Missed</button><button onclick="Vault.grade(${c.id}, 3, event)" class="text-sm italic text-zen-muted hover:text-zen-accent">Struggled</button><button onclick="Vault.grade(${c.id}, 5, event)" class="text-sm italic text-zen-muted hover:text-green-600">Recalled</button></div><button onclick="Vault.delete(${c.id}, event)" class="absolute top-4 right-6 text-zen-muted/30 hover:text-red-500">x</button></div></div></div>`;
+                    }
+                }).join('');
+            }
+        };
+
+        // --- HACKER TERMINAL ---
+        const Terminal = {
+            hist: [], idx: -1,
+            open() { document.getElementById('terminal-overlay').classList.remove('hidden'); setTimeout(() => document.getElementById('term-input').focus(), 50); },
+            close() { document.getElementById('terminal-overlay').classList.add('hidden'); },
+            handleInput(e) {
+                const inp = e.target;
+                if (e.key === 'Enter') { const c = inp.value.trim(); inp.value = ''; if(c){ this.hist.unshift(c); this.idx = -1; this.exec(c); } }
+                else if (e.key === 'ArrowUp') { e.preventDefault(); if(this.idx < this.hist.length-1) inp.value = this.hist[++this.idx]; }
+                else if (e.key === 'ArrowDown') { e.preventDefault(); if(this.idx > 0) inp.value = this.hist[--this.idx]; else { this.idx = -1; inp.value = ''; } }
+            },
+            exec(cmd) {
+                const out = document.getElementById('term-output'); out.innerHTML += `<span class="text-[#22c55e]">root@os:~$ </span>${cmd}\n`;
+                const args = cmd.split(' '); const c = args[0].toLowerCase();
+                if(c === 'help') out.innerHTML += `Commands: clear, help, setkey [key], setmode [n|h|z], nuke, neofetch\n`;
+                else if(c === 'clear') out.innerHTML = '';
+                else if(c === 'setkey') { OS.el('feynman-input').value = args[1]||''; OS.saveKey('h'); out.innerHTML += `[OK]\n`; }
+                else if(c === 'setmode') { if(['n','h','z'].includes(args[1])) OS.setMode(args[1]); else out.innerHTML += `Invalid mode.\n`; }
+                else if(c === 'nuke') OS.nuke();
+                else if(c === 'neofetch') out.innerHTML += `Mastery OS Tri-Core. Uptime: ${DB.data.pomodoro.streak}d\n`;
+                else out.innerHTML += `bash: ${c}: not found\n`;
+                out.scrollTop = out.scrollHeight;
+            }
+        };
+
+        // --- GLOBAL HOTKEYS ---
+        document.addEventListener('keydown', (e) => {
+            if(OS.mode !== 'h') return;
+            if (e.altKey) {
+                if(e.key === '1') { e.preventDefault(); OS.nav('blueprint'); }
+                if(e.key === '2') { e.preventDefault(); OS.nav('curriculum'); }
+                if(e.key === '3') { e.preventDefault(); OS.nav('feynman'); }
+                if(e.key === '4') { e.preventDefault(); OS.nav('vault'); }
+                if(e.key.toLowerCase() === 't') { e.preventDefault(); Terminal.open(); }
+            }
+            if (e.key === 'Escape') Terminal.close();
+        });
+
+        window.onload = () => OS.init();
+    </script>
+</body>
+</html>
